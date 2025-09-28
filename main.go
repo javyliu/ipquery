@@ -12,11 +12,11 @@ import (
 	"github.com/pg9182/ip2x"
 )
 
-const (
-	// 固定数据库路径
-	dbPath = "./IP2LOCATION-LITE-DB3.BIN"
+var (
+	// 数据库路径
+	dbPath *string
 	// API 监听地址
-	listenAddr = ":8080"
+	listenAddr *string
 )
 
 var (
@@ -31,19 +31,6 @@ func init() {
 	loadMap("countries.json", &countryMap)
 	loadMap("regions.json", &regionMap)
 	loadMap("cities.json", &cityMap)
-
-	// 打开数据库文件
-	f, err := os.Open(dbPath)
-	if err != nil {
-		log.Fatalf("错误: 无法打开数据库文件 %s: %v", dbPath, err)
-	}
-	// defer f.Close()
-
-	// 创建数据库实例
-	db, err = ip2x.New(f)
-	if err != nil {
-		log.Fatalf("错误: 无法初始化数据库 %s: %v", dbPath, err)
-	}
 }
 
 func loadMap(file string, m *map[string]string) {
@@ -162,7 +149,25 @@ func getStringOrEmpty(r ip2x.Record, field ip2x.DBField) string {
 func main() {
 	// 添加命令行标志以支持命令行查询（可选）
 	query := flag.String("query", "", "直接查询 IP 地址（以逗号分隔）")
+	dbPath = flag.String("db_path", "./IP2LOCATION-LITE-DB3.BIN", "批定数据库路径，默认为 ./IP2LOCATION-LITE-DB3.BIN")
+	listenAddr = flag.String("listen_addr", ":8080", "API 监听地址，默认为 :8080")
 	flag.Parse()
+
+	fmt.Println("dbPath:", *dbPath)
+	fmt.Println("listenAddr:", *listenAddr)
+
+	// 打开数据库文件
+	f, err := os.Open(*dbPath)
+	if err != nil {
+		log.Fatalf("错误: 无法打开数据库文件 %s: %v", *dbPath, err)
+	}
+	// defer f.Close()
+
+	// 创建数据库实例
+	db, err = ip2x.New(f)
+	if err != nil {
+		log.Fatalf("错误: 无法初始化数据库 %s: %v", *dbPath, err)
+	}
 
 	if *query != "" {
 		// 命令行模式
@@ -206,8 +211,8 @@ func main() {
 
 	// API 服务模式
 	http.HandleFunc("/query", queryHandler)
-	log.Printf("API 服务启动在 %s，访问 /query?ip=<IP地址>", listenAddr)
-	if err := http.ListenAndServe(listenAddr, nil); err != nil {
+	log.Printf("API 服务启动在 %s，访问 /query?ip=<IP地址>", *listenAddr)
+	if err := http.ListenAndServe(*listenAddr, nil); err != nil {
 		log.Fatalf("错误: 无法启动服务: %v", err)
 	}
 }
