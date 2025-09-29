@@ -115,6 +115,11 @@ or
 ipquery -port :80 -db_path ./IP2LOCATION-LITE-DB3.BIN
 ```
 
+## With Docker or podman
+```bash
+podman run --rm -it -p 81:8080 -v ./IP2LOCATION-LITE-DB3.BIN:/app/IP2LOCATION-LITE-DB3.BIN javyliu/ipquery:v1.0.1
+```
+
 ## TODO
 
 添加多语言展示方式

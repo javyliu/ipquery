@@ -24,10 +24,10 @@ FROM alpine:latest
 RUN apk --no-cache add ca-certificates
 
 # 设置工作目录
-WORKDIR /root/
+WORKDIR /app/
 
 # 从构建阶段复制可执行文件
-COPY --from=builder /app/ipquery .
+COPY --from=builder /app/ipquery /app/cities.json /app/countries.json /app/regions.json ./
 
 # 暴露应用端口（根据你的应用修改端口号）
 EXPOSE 8080
