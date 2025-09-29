@@ -1,0 +1,50 @@
+name: Build and push multi-arch image on release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+  packages: write
+  # id-token: write   # 若使用 ghcr OIDC 登录，可以用这个
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # - name: Login to registry
+        # 选择一个：GHCR 或 DockerHub
+        # --- GHCR 登录（推荐使用GITHUB_TOKEN或OIDC） ---
+        # uses: docker/login-action@v3
+        # with:
+        #   registry: ghcr.io
+        #   username: ${{ github.actor }}
+        #   password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: |
+            docker.io/${{ secrets.DOCKERHUB_USERNAME }}/ipquery:${{ github.ref_name }}
+            docker.io/${{ secrets.DOCKERHUB_USERNAME }}/ipquery:latest

@@ -135,6 +135,20 @@ func queryHandler(w http.ResponseWriter, r *http.Request) {
 		results = append(results, result)
 	}
 
+	// 如果仅为一个 IP 查询，返回单个结果
+	if len(results) == 1 {
+		result := results[0]
+		if result.Error != "" {
+			http.Error(w, `{"error": "查询失败"}`, http.StatusInternalServerError)
+			return
+		}
+		// 返回 单个JSON 响应
+		if err := json.NewEncoder(w).Encode(result); err != nil {
+			http.Error(w, `{"error": "编码响应失败"}`, http.StatusInternalServerError)
+		}
+		return
+	}
+
 	// 返回 JSON 响应
 	if err := json.NewEncoder(w).Encode(results); err != nil {
 		http.Error(w, `{"error": "编码响应失败"}`, http.StatusInternalServerError)
@@ -150,7 +164,7 @@ func main() {
 	// 添加命令行标志以支持命令行查询（可选）
 	query := flag.String("query", "", "直接查询 IP 地址（以逗号分隔）")
 	dbPath = flag.String("db_path", "./IP2LOCATION-LITE-DB3.BIN", "批定数据库路径，默认为 ./IP2LOCATION-LITE-DB3.BIN")
-	listenAddr = flag.String("listen_addr", ":8080", "API 监听地址，默认为 :8080")
+	listenAddr = flag.String("port", ":8080", "API 监听地址，默认为 :8080")
 	flag.Parse()
 
 	fmt.Println("dbPath:", *dbPath)

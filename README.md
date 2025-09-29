@@ -2,6 +2,10 @@
 
 A Go-based service for querying geographic location information by IP address.
 
+## The project does not contain database files, you need to download it at lite.ip2location.com yourself
+
+[ip2location](https://lite.ip2location.com/database-download "IP2LOCATION-LITE-DB3.BIN download")
+
 ## Features
 
 - Simple REST API endpoint
@@ -65,9 +69,27 @@ The service returns location data in JSON format:
 **GET** `/query?ip=<ip_address>`
 
 - **Parameters**: 
-  - `ip` (required): The IP address to query (IPv4 format)
+  - `ip` (required): The IP address to query (IPv4 format), Separate multiple IPS with commas and return an array
 
-- **Response**: JSON array containing location objects
+- **Response**: JSON object with location objects, multiple IPS return an array contains location objects. 
+  
+
+Examples:
+
+
+
+`/query?ip=34.32.23.12`
+`
+{"ip":"34.32.23.12","country":"Germany","country_code":"DE","region":"Berlin","city":"Berlin"}
+`
+
+`/query?ip=34.32.23.12,34.32.23.13`
+`
+[
+  {"ip":"34.32.23.12","country":"Germany","country_code":"DE","region":"Berlin","city":"Berlin"},
+  {"ip":"34.32.23.13","country":"Germany","country_code":"DE","region":"Berlin","city":"Berlin"}
+]
+`
 
 ## Development
 
@@ -88,7 +110,10 @@ To start with a API
 ```bash
 ipquery
 ```
-
+or
+```bash
+ipquery -port :80 -db_path ./IP2LOCATION-LITE-DB3.BIN
+```
 ## License
 
-IpQuery is released under the MIT License.
+IpQuery is released under the MIT License.****
