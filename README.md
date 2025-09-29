@@ -114,6 +114,11 @@ or
 ```bash
 ipquery -port :80 -db_path ./IP2LOCATION-LITE-DB3.BIN
 ```
+
+## TODO
+
+添加多语言展示方式
+
 ## License
 
 IpQuery is released under the MIT License.****
