@@ -1,6 +1,8 @@
 package main
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -17,6 +19,7 @@ var (
 	dbPath *string
 	// API 监听地址
 	listenAddr *string
+	apiKey     *string
 )
 
 var (
@@ -70,8 +73,9 @@ type QueryResult struct {
 	IP          string `json:"ip"`
 	Country     string `json:"country"`
 	CountryCode string `json:"country_code"`
-	Region      string `json:"region"`
+	Region      string `json:"province"`
 	City        string `json:"city"`
+	Code        string `json:"code"` // 用于兼容旧api, 指明结果返回状态
 	// Latitude    float32 `json:"latitude"`
 	// Longitude   float32 `json:"longitude"`
 	// ISP         string  `json:"isp"`
@@ -83,15 +87,40 @@ type QueryResult struct {
 	Error string `json:"error,omitempty"`
 }
 
+// api md5 验证
+func md5sign(str string) string {
+	t1 := md5.Sum([]byte(str))
+	sign := hex.EncodeToString(t1[:])
+	return sign
+}
+
 func queryHandler(w http.ResponseWriter, r *http.Request) {
 	// 设置响应头
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	// 获取参数
+	params := r.URL.Query()
+	ipParam := params.Get("ip")
 
-	// 获取 IP 参数
-	ipParam := r.URL.Query().Get("ip")
 	if ipParam == "" {
-		http.Error(w, `{"error": "缺少 ip 参数"}`, http.StatusBadRequest)
+		http.Error(w, `{"error": "缺少必要参数：IP"}`, http.StatusBadRequest)
 		return
+	}
+
+	// 仅在有 API Key 的情况下需要进行签名
+	if *apiKey != "" {
+		timeStamp := params.Get("time")
+		sign := params.Get("sign")
+		log.Println(timeStamp, sign)
+		if timeStamp == "" || sign == "" {
+			http.Error(w, `{"error": "缺少必要参数：时间戳和签名"}`, http.StatusBadRequest)
+			return
+		}
+		needSign := md5sign(ipParam + timeStamp + *apiKey)
+		log.Println(needSign)
+		if sign != needSign {
+			http.Error(w, `{"error": "签名不正确"}`, http.StatusBadRequest)
+			return
+		}
 	}
 
 	// 分割 IP 列表
@@ -123,6 +152,7 @@ func queryHandler(w http.ResponseWriter, r *http.Request) {
 			CountryCode: countryCode,
 			Region:      localize("region_name", getStringOrEmpty(r, ip2x.Region)),
 			City:        localize("city_name", getStringOrEmpty(r, ip2x.City)),
+			Code:        "0",
 			// Latitude:    r.GetFloat32("Latitude"),
 			// Longitude:   r.GetFloat32("longitude"),
 			// ISP:         getStringOrEmpty(r, ip2x.ISP),
@@ -165,11 +195,14 @@ func main() {
 	query := flag.String("query", "", "直接查询 IP 地址（以逗号分隔）")
 	dbPath = flag.String("db_path", "./IP2LOCATION-LITE-DB3.BIN", "批定数据库路径，默认为 ./IP2LOCATION-LITE-DB3.BIN")
 	listenAddr = flag.String("port", ":8080", "API 监听地址，默认为 :8080")
+	apiKey = flag.String("api_key", os.Getenv("IPQUERY_API_KEY"), "API Key")
 	flag.Parse()
 
 	fmt.Println("dbPath:", *dbPath)
 	fmt.Println("listenAddr:", *listenAddr)
 
+	// fmt.Println(md5sign(*query))
+	// return
 	// 打开数据库文件
 	f, err := os.Open(*dbPath)
 	if err != nil {
@@ -226,6 +259,7 @@ func main() {
 	// API 服务模式
 	http.HandleFunc("/query", queryHandler)
 	log.Printf("API 服务启动在 %s，访问 /query?ip=<IP地址>", *listenAddr)
+	log.Printf("API Key: %s", *apiKey)
 	if err := http.ListenAndServe(*listenAddr, nil); err != nil {
 		log.Fatalf("错误: 无法启动服务: %v", err)
 	}
