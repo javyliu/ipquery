@@ -144,9 +144,22 @@ To specify an `IPQUERY_API_KEY` environment variable:
 podman run --rm -it -p 8080:8080 -v ./IP2LOCATION-LITE-DB3.BIN:/app/IP2LOCATION-LITE-DB3.BIN -e IPQUERY_API_KEY=xxxx javyliu/ipquery:v1.0.1
 ```
 
-## TODO
+## Localization
 
-- Add support for multi-language display
+You can specify the `-locale` option at startup; the default is `zh-CN`.
+
+```bash
+ipquery -locale=zh-CN
+```
+
+The corresponding localization file is `zh-CN.json`:
+```json
+{
+  "countries": { "US": "美国", "CN": "中国" },
+  "regions": { "CA": "加利福尼亚", "BJ": "北京" },
+  "cities": { "Los Angeles": "洛杉矶", "Beijing": "北京" }
+}
+```
 
 ## License
 
