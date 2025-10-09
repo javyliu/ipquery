@@ -97,6 +97,7 @@ func queryHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	log.Println(r.URL)
 
 	ips := strings.Split(ipParam, ",")
 	results := make([]QueryResult, 0, len(ips))
